@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<tapizClassWeb xmlns:dm0="http://schemas.microsoft.com/VisualStudio/2008/DslTools/Core" dslVersion="1.0.0.0" Id="28cfba65-ca02-45dd-a5ba-56241133157b" xmlns="http://schemas.microsoft.com/dsltools/JRPPCLMCFProyectoIPS">
+  <clase>
+    <tapizClassWebHasClase Id="40703616-a6b9-47f6-8e84-09c261a299ab">
+      <clase Id="dd49ad42-0c16-4090-9e9d-45a6cb20cb92" nombre="Empleado">
+        <atributo>
+          <claseHasAtributo Id="3dc557fc-6406-4fff-948a-7873d45c83df">
+            <atributo Id="837caa0e-d08d-4bf3-8c28-d308250f40eb" nombre="sueldo" tipoDato="Float" modAcceso="private" />
+          </claseHasAtributo>
+        </atributo>
+        <atributoIdentificador>
+          <claseHasAtributoIdentificador Id="680651c0-b1c3-4d35-a87a-d7cd1beb1ff6">
+            <atributoIdentificador Id="cbe3c652-4aaa-4bb9-b079-2ddfef89b8b7" nombre="idEmpleado" tipoDato="Int" modAcceso="private" />
+          </claseHasAtributoIdentificador>
+        </atributoIdentificador>
+        <claseReferenciada>
+          <claseReferencesClase Id="45189cdd-da71-4e9e-ae54-43e519e5cdc4" cardinalidadO="uno_n" cardinalidadD="uno_n" nombreO="gestionado" nombreD="gestiona" nombreR="esgestionado">
+            <claseMoniker Id="3e7fb5f0-2d19-4d68-ad76-7b3b9be4fa57" />
+          </claseReferencesClase>
+        </claseReferenciada>
+        <superClase>
+          <clasePadreHasClaseHija Id="589cb47a-94e9-411b-83a9-513c6544e021" tipoHerencia="Total, disjunta">
+            <claseMoniker Id="f58587d8-8c90-43ec-9207-4750b662ada7" />
+          </clasePadreHasClaseHija>
+        </superClase>
+      </clase>
+    </tapizClassWebHasClase>
+    <tapizClassWebHasClase Id="ee7e3f75-864d-4bc5-8b0d-9a8687cce7ff">
+      <clase Id="3e7fb5f0-2d19-4d68-ad76-7b3b9be4fa57" nombre="Hotel">
+        <atributo>
+          <claseHasAtributo Id="3f331cd3-2375-438d-9030-99c5cacce4e7">
+            <atributo Id="bff1a34d-38e1-49e7-9f7c-4c2c5003a67d" nombre="nombre" tipoDato="String" modAcceso="private" />
+          </claseHasAtributo>
+          <claseHasAtributo Id="0aa3a93c-2de6-48fe-997f-d09e96274cef">
+            <atributo Id="2d92a30e-41d6-4e44-86ee-298149f13a58" nombre="direccion" tipoDato="String" modAcceso="private" />
+          </claseHasAtributo>
+        </atributo>
+        <operacion>
+          <claseHasOperacion Id="20598db2-ccea-49b2-b380-1bcda7d4a3a0">
+            <operacion Id="ffa11cff-5da6-4a1a-bb12-87a58be4b4e0" nombre="Gestionar" modAcceso="private" />
+          </claseHasOperacion>
+        </operacion>
+        <atributoIdentificador>
+          <claseHasAtributoIdentificador Id="5a8f4325-ff47-4354-8572-e88103db6492">
+            <atributoIdentificador Id="bafa8aad-0e8f-40b6-80b7-6ad1baeaaaa3" nombre="idHotel" tipoDato="Int" modAcceso="private" />
+          </claseHasAtributoIdentificador>
+        </atributoIdentificador>
+      </clase>
+    </tapizClassWebHasClase>
+    <tapizClassWebHasClase Id="282c6981-42a4-4a81-b38e-6f74e8c2799f">
+      <claseEnriquecida Id="6ea2e215-a0f9-4918-a28c-692c9da5ddd7" nombre="Habitacion">
+        <atributo>
+          <claseHasAtributo Id="318945ab-0e13-40dc-b686-a6cf0c8cf2d5">
+            <atributo Id="6e1c9943-11cd-4251-96a2-3cde01f2b3d0" nombre="gfgfd" tipoDato="Boolean" modAcceso="private" />
+          </claseHasAtributo>
+        </atributo>
+        <estiloClase>
+          <claseEnriquecidaHasEstiloClase Id="9fb32e12-3740-4ad0-9d92-968fab574d45">
+            <estiloClase Id="c12ddeed-8d4a-4373-a9d2-f5f7e95c25dc" colorFondo="verde" colorLetra="negro" tipoLetra="TimesNewRoman" alineacion="center" textoNormal="false" checkBox="false" radioButton="false" />
+          </claseEnriquecidaHasEstiloClase>
+        </estiloClase>
+        <estiloOperacion>
+          <claseEnriquecidaHasEstiloOperacion Id="4be74c9a-e75f-4c0f-8439-d019be7fbb41">
+            <estiloOperacion Id="8eb0c55c-4920-42dc-bd9c-4a57c4d27fd9" tipoLetra="Calibri" colorLetra="amarillo" nombre="hghfh" />
+          </claseEnriquecidaHasEstiloOperacion>
+        </estiloOperacion>
+        <estiloAtributo>
+          <claseEnriquecidaHasEstiloAtributo Id="dcf5621c-bffa-4fcc-94e2-f81ade0fe574">
+            <estiloAtributo Id="39593125-8bca-4866-8a56-396e4d07b638" tipoLetra="TimesNewRoman" colorLetra="rojo" />
+          </claseEnriquecidaHasEstiloAtributo>
+        </estiloAtributo>
+      </claseEnriquecida>
+    </tapizClassWebHasClase>
+    <tapizClassWebHasClase Id="e3c4ec54-22da-4c35-b07f-1ae315053aa8">
+      <clase Id="f58587d8-8c90-43ec-9207-4750b662ada7" nombre="Persona">
+        <atributo>
+          <claseHasAtributo Id="bf42e837-ad5a-4897-92ae-3471b82b94d0">
+            <atributo Id="2b75ebb7-9ecb-4e2a-b6e2-161b4dbf8a09" nombre="nombre" tipoDato="String" modAcceso="private" />
+          </claseHasAtributo>
+          <claseHasAtributo Id="510042e0-e590-427d-ae6e-10f44b9ad78e">
+            <atributo Id="2499ac8f-3017-45b7-9dad-f0e2b361a482" nombre="apellidos" tipoDato="String" modAcceso="private" />
+          </claseHasAtributo>
+        </atributo>
+        <operacion>
+          <claseHasOperacion Id="3af97c69-1a45-4714-bb62-be010541501d">
+            <operacion Id="858efe95-aaa2-44b6-9068-bd133be0f2ac" nombre="respira" modAcceso="private" />
+          </claseHasOperacion>
+        </operacion>
+        <atributoIdentificador>
+          <claseHasAtributoIdentificador Id="80291605-0f73-4d65-9b72-7de0dc86d99b">
+            <atributoIdentificador Id="48eeb9d4-e171-4b05-969f-3953ac60e181" nombre="DNI" tipoDato="String" modAcceso="private" />
+          </claseHasAtributoIdentificador>
+        </atributoIdentificador>
+      </clase>
+    </tapizClassWebHasClase>
+    <tapizClassWebHasClase Id="3a8dd881-a12a-4692-938c-ba0a8278bb45">
+      <clase Id="0e46f754-b1df-4a16-bef1-ce166b83b136" nombre="Cliente">
+        <atributo>
+          <claseHasAtributo Id="28aae693-285a-4f1d-8f3c-9592b025a1bd">
+            <atributo Id="51c75328-dc8d-4427-b3af-1424f75e0e8d" nombre="puntosAcum" tipoDato="Int" modAcceso="private" />
+          </claseHasAtributo>
+        </atributo>
+        <atributoIdentificador>
+          <claseHasAtributoIdentificador Id="419e4a98-93d7-400f-972d-d10d32e5ee52">
+            <atributoIdentificador Id="ad5a431c-7a92-433b-850b-8b0dfe898977" nombre="idCliente" tipoDato="Int" modAcceso="private" />
+          </claseHasAtributoIdentificador>
+        </atributoIdentificador>
+        <superClase>
+          <clasePadreHasClaseHija Id="1276eb18-3d3f-42bf-b713-a5fb49febd99">
+            <claseMoniker Id="f58587d8-8c90-43ec-9207-4750b662ada7" />
+          </clasePadreHasClaseHija>
+        </superClase>
+      </clase>
+    </tapizClassWebHasClase>
+  </clase>
+</tapizClassWeb>

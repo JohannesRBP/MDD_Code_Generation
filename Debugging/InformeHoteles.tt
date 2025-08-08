@@ -1,0 +1,613 @@
+﻿<#@ template inherits="Microsoft.VisualStudio.TextTemplating.VSHost.ModelingTextTransformation" language="C#" hostspecific="True"#>
+<#@ output extension=".txt" #>
+<#@ JRPPCLMCFProyectoIPS processor="JRPPCLMCFProyectoIPSDirectiveProcessor" requires="fileName='Hoteles.JRPPCLMCFProyectoIPS'" #>
+<#@ include file="EF.utility.CS.ttinclude" #>
+
+<# 
+	
+//MAIN
+	//Comprobamos que existe al menos una clase en el tapiz
+	if (this.TapizClassWeb.Clase.Count!=0){ 	    
+		//Inicializa la creacion de ficheros
+		var fileManager=EntityFrameworkTemplateFileManager.Create(this); 
+		//Creamos una lista para el menu
+		List<String> listaClase = new List<String>();
+		//Recorremos todas las clases creadas en el tapiz
+		foreach(Clase clase in this.TapizClassWeb.Clase){ 
+			
+			//COMPROBAR SI ES UNA HERENCIA, SI LO ES y es superclase NO LE CREAREMOS NINGUN HTML Y En el java le pondremos abstract, si es subclase le pondremos extend en el java
+			bool superclase=false;
+			bool subclase=false;
+			bool abstracta=false;
+
+			if(clase.superClase!=null){
+				superclase=true; 				
+				
+			}
+			if(clase.subClase.Count>0){
+				subclase=true;
+				//Si en la relacion contiene que es de tipo TOTAL
+				foreach(ClasePadreHasClaseHija r in ClasePadreHasClaseHija.GetLinksTosubClase(clase)){
+					if(r.tipoHerencia.Contains("Total")){
+						abstracta=true; 
+					}
+				}
+			}	
+			
+			
+		
+			//Comprobamos si la clase es enriquecida
+			bool enriquecida=false;
+			if(clase is ClaseEnriquecida)
+				enriquecida=true; 
+			
+			//Ver cuando son clase de asociacion, si es N:M entonces habra que crear un html con el nombre de la relacion
+			//Revisamos las relaciones que tiene de asociacion
+			foreach(ClaseReferencesClase r in ClaseReferencesClase.GetLinksToclaseReferenciadora(clase)){
+				//Si es 1..* o 0..* en ambos extremos de la relacion
+				if((r.cardinalidadO.ToString().Equals("uno_n") || r.cardinalidadO.ToString().Equals("cero_n")) && 
+					(r.cardinalidadD.ToString().Equals("uno_n") || r.cardinalidadD.ToString().Equals("cero_n"))){
+					//Creamos una clase con el nombre de la relacion, la añadimos a la lista y generamos sus html
+					listaClase.Add(r.nombreR);
+					generarHTML(clase, fileManager, false, false, r.nombreR);
+				}
+			}
+
+			//Llamamos a cada metodo por cada clase para generar el .html 
+			if(!abstracta){ //Si no abstracta y Total (Abstracta, no tiene subclases)				
+				generarHTML(clase, fileManager, enriquecida, superclase, "");
+				listaClase.Add(clase.nombre);
+			}
+
+			//Parametros (clase: cada clase contenida en el tapiz, enriquecida(bool): indica si la clase es enriquecida o no)
+			//Crea un fichero java de cada clase
+			fileManager.StartNewFile(clase.nombre+".java");
+			generarJava(clase, subclase, superclase, abstracta); 
+			
+		}
+
+		//PONER AQUI METODO PARA CREACION DEL HOME, habra que añadirle un link para cada clase no abstracta creada, para ello guardar el nombre de cada clase no asbtracta creada en el bucle en una lista
+		
+		fileManager.StartNewFile("Home.html");
+		GenerarMenu(listaClase);
+
+		//Cierra la creacion de ficheros
+		fileManager.Process();
+	}
+
+#>
+<#+
+//METODO PARA LLAMAR A LOS METODOS DE GENERACION DE LOS HTML DE LAS CLASES
+	private void generarHTML(Clase clase, EntityFrameworkTemplateFileManager fileManager, bool enriquecida, bool superclase, string asociacionNM){
+
+		//Crearemos una variable para el nombre del fichero, si es asociacion, 
+		//sera el nombre de la relacion, si no, el nombre de la clase
+		string nombreHTML=clase.nombre;
+		if(asociacionNM!="")
+			nombreHTML=asociacionNM;
+
+		//Crea un fichero donde pondremos la home de cada clase
+		fileManager.StartNewFile(nombreHTML + "Home.html");
+		generarHome(clase, enriquecida, asociacionNM); 
+
+		//Crea un fichero donde pondremos el alta de cada clase
+		fileManager.StartNewFile(nombreHTML+"Alta.html");
+		generarAlta(clase, enriquecida, superclase, asociacionNM);
+
+		//Crea un fichero donde pondremos el listado de cada clase
+		fileManager.StartNewFile(nombreHTML+"Lista.html");
+		generarListado(clase, enriquecida, superclase, asociacionNM);
+		
+	}
+
+#>
+<#+
+//METODO PARA GENERAR HTML DE CADA CLASE_HOME
+	private void generarHome(Clase clase, bool enriquecida, string asociacionNM){
+
+		//Asignacion de estilos de la clase, dependiendo de si es enriquecida o no
+		string tipoLetra="Arial";
+		string colorLetra="#000000";
+		string alineacion="center";
+		string colorFondo="#ffffff";		
+
+		//coger estilos de EstiloClase  
+		if(enriquecida){ 
+			ClaseEnriquecida claseEnriquecida= (ClaseEnriquecida)clase; //La casteamos en ClaseEnriquecida
+			if(claseEnriquecida.EstiloClase!=null){				 
+				EstiloClase estiloClase = (EstiloClase) claseEnriquecida.EstiloClase;
+				tipoLetra = convertidorTiposLetra(estiloClase.tipoLetraCalculado);  
+				colorLetra = convertidorColoresHex(estiloClase.colorLetraCalculado);
+				alineacion= estiloClase.alineacionCalculado;
+				colorFondo = convertidorColoresHex(estiloClase.colorFondoCalculado);			
+			}
+			
+		}
+
+		//Variable para guardar el nombre de la clase
+		string nombreClase=clase.nombre;
+		if(asociacionNM!=""){
+			nombreClase=asociacionNM;
+		}
+
+
+		WriteLine("<html>"); 
+		WriteLine("<head>"); 
+		WriteLine("<title>"+nombreClase+"Home</title>");
+		WriteLine("</head>"); 
+		WriteLine("<body>"); 
+		WriteLine("<div style='border: 1px solid black; margin:20px'>"); 
+		WriteLine("<button style='color:"+colorFondo+"; font-family:"+tipoLetra+";'><a href=Home.html>Home</a></button>");
+		WriteLine("<form name='"+nombreClase+"' style='background-color:"+colorFondo+"; color:"+colorLetra+";font-family:"+tipoLetra+";text-align:"+alineacion+";'>");
+		WriteLine("<h1>"+nombreClase+"</h1>"); 
+
+		//Boton para alta
+		WriteLine("<button style='color:"+colorLetra+";font-family:"+tipoLetra+"'> <a href='./"+nombreClase+"Alta.html'>Alta</a> </button>"); 	
+		//Boton para listado
+		WriteLine("<button style='color:"+colorLetra+";font-family:"+tipoLetra+"'> <a href='./"+nombreClase+"Lista.html'>Listado</a> </button>"); 
+
+		WriteLine("</form>"); 
+		WriteLine("</div>"); 
+		WriteLine("</body>"); 
+		WriteLine("</html>"); 
+	}
+#>
+<#+ 
+//METODO PARA GENERAR HTML DE CADA CLASE_ALTA
+
+	private void generarAlta(Clase clase, bool enriquecida, bool superclase, string asociacionNM){
+		
+
+		//Asignacion de estilos de la clase, dependiendo de si es enriquecida o no
+		string tipoLetra="Arial";
+		string colorLetra="#000000";
+		string alineacion="center";
+		string colorFondo="#ffffff";
+
+		//Asignacion de estilos de atributo, dependiendo de si es enriquecida o no
+		string tipoLetraAtr="Arial";
+		string colorLetraAtr="#000000";
+
+		//coger estilos de EstiloClase y EstiloAtributo 
+		if(enriquecida){ 
+			ClaseEnriquecida claseEnriquecida= (ClaseEnriquecida)clase; //La casteamos en ClaseEnriquecida
+			if(claseEnriquecida.EstiloClase!=null){					 
+				EstiloClase estiloClase = (EstiloClase) claseEnriquecida.EstiloClase;
+				tipoLetra = convertidorTiposLetra(estiloClase.tipoLetraCalculado);
+				colorLetra = convertidorColoresHex(estiloClase.colorLetraCalculado);
+				alineacion= estiloClase.alineacionCalculado; 
+				colorFondo = convertidorColoresHex(estiloClase.colorFondoCalculado);			
+			}
+			if(claseEnriquecida.EstiloAtributo!=null) {							 
+				EstiloAtributo estiloAtributo = (EstiloAtributo) claseEnriquecida.EstiloAtributo;
+				tipoLetraAtr = convertidorTiposLetra(estiloAtributo.tipoLetraCalculado);  
+				colorLetraAtr = convertidorColoresHex(estiloAtributo.colorLetraCalculado);			
+			}
+		}
+
+		//Variable para guardar el nombre de la clase
+		string nombreClase=clase.nombre;
+		if(asociacionNM!=""){
+			nombreClase=asociacionNM;
+		}
+
+		WriteLine("<html>"); 
+		WriteLine("<head>"); 
+		WriteLine("<title>"+nombreClase+"Alta</title>");
+		WriteLine("</head>"); 
+		WriteLine("<body>"); 
+		WriteLine("<div style='border: 1px solid black; margin:20px'>"); 
+		WriteLine("<button style='color:"+colorFondo+"; font-family:"+tipoLetra+";'><a href=Home.html>Home</a></button>");
+		WriteLine("<p style='background-color: "+colorFondo+"; color:"+colorLetra+"; font-weight:bold; font-family:"+tipoLetra+"; text-align:"+alineacion+"'> Alta"+nombreClase+"</p>");
+		WriteLine("<form name='"+nombreClase+"' style='background-color:"+colorFondo+"; color:"+colorLetra+";font-family:"+tipoLetra+";text-align:"+alineacion+";'>");
+		WriteLine("<table>");
+
+		if(asociacionNM==""){
+			//Añadir fila del atributo clave
+			if(clase.AtributoIdentificador!=null){
+				AtributoIdentificador atributoIdentificador = clase.AtributoIdentificador;			
+				WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+					atributoIdentificador.nombre+"<input type='text' id='"+atributoIdentificador.nombre+"'></td></tr>");	
+			}
+			//Añadir Fila del atributo clave de clase padre
+			if(superclase && clase.superClase.AtributoIdentificador!=null){
+				AtributoIdentificador atributoIdentificador = clase.superClase.AtributoIdentificador;			
+				WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+					atributoIdentificador.nombre+"<input type='text' id='"+atributoIdentificador.nombre+"'></td></tr>");	
+			}		 
+			//Añadimos los atributos de la clase padre
+			if(superclase && clase.superClase.Atributo.Count!=0)			
+				foreach(Atributo atributo in clase.superClase.Atributo){
+					WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+						atributo.nombre+"<input type='text' id='"+atributo.nombre+"'></td></tr>");	
+				}
+			//Recorremos los atributos y añadimos una fila a la tabla por cada uno
+			if(clase.Atributo.Count==0)
+				WriteLine("No hay atributos");
+			else
+				foreach(Atributo atributo in clase.Atributo){
+					WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+						atributo.nombre+"<input type='text' id='"+atributo.nombre+"'></td></tr>");	
+				}
+		}else{
+			//Añadimos los atributos clave de ambas clases
+			//El atributo clave de la clase actual
+			if(clase.AtributoIdentificador!=null){
+				AtributoIdentificador atributoIdentificador = clase.AtributoIdentificador;			
+				WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+					atributoIdentificador.nombre+"<input type='text' id='"+atributoIdentificador.nombre+"'></td></tr>");	
+			}
+			//El atributo clave de la clase relacionada, como pueden ser varias, hay que recorrerlas y 
+				//si coincide el nombre de la relacion, se coge su atributo clave
+			foreach(Clase claseRef in clase.claseReferenciadora){
+				foreach(ClaseReferencesClase r in ClaseReferencesClase.GetLinksToClaseReferenciada(claseRef)){
+					if(r.nombreR.Equals(asociacionNM)){
+						if(clase.AtributoIdentificador!=null){
+							AtributoIdentificador atributoIdentificador = claseRef.AtributoIdentificador;			
+							WriteLine("<tr><td style='color:"+colorLetraAtr+"; font-family:"+tipoLetraAtr+";'>"+
+								atributoIdentificador.nombre+"<input type='text' id='"+atributoIdentificador.nombre+"'></td></tr>");	
+						}
+					}
+				}
+			}
+		}
+
+
+		WriteLine("</table>");
+		//Botones
+		WriteLine("<button style='color:"+colorLetra+"; font-family:"+tipoLetra+";'><a href="+nombreClase+"Home.html>Guardar</a></button>");
+		WriteLine("<button style='color:"+colorLetra+"; font-family:"+tipoLetra+";'><a href="+nombreClase+"Home.html>Volver</a></button>");
+		WriteLine("</form>");
+		WriteLine("</div>");
+		WriteLine("</body>");
+		WriteLine("</html>");
+
+	} 
+	
+#>
+<#+
+
+//METODO PARA GENERAR HTML DE CADA CLASE_LISTADO
+	private void generarListado(Clase clase, bool enriquecida, bool superclase, string asociacionNM){
+			
+		//Asignacion de estilos de la clase, dependiendo de si es enriquecida o no
+		string tipoLetra="Arial";
+		string colorLetra="#000000";
+		string alineacion="center";
+		string colorFondo="#ffffff";
+
+		string tipoLetraOpe = "Arial";
+		string colorLetraOpe="#000000";
+		 
+		//coger estilos de EstiloClase
+		if(enriquecida){ 
+			ClaseEnriquecida claseEnriquecida= (ClaseEnriquecida)clase; //La casteamos en ClaseEnriquecida
+			if(claseEnriquecida.EstiloClase!=null){					 
+				EstiloClase estiloClase = (EstiloClase) claseEnriquecida.EstiloClase;
+				tipoLetra = convertidorTiposLetra(estiloClase.tipoLetraCalculado);
+				colorLetra = convertidorColoresHex(estiloClase.colorLetraCalculado);
+				alineacion= estiloClase.alineacionCalculado; 
+				colorFondo = convertidorColoresHex(estiloClase.colorFondoCalculado);			
+			}
+			if(claseEnriquecida.EstiloOperacion!=null) {							 
+				EstiloOperacion estiloOperacion = (EstiloOperacion) claseEnriquecida.EstiloOperacion;
+				tipoLetraOpe = convertidorTiposLetra(estiloOperacion.tipoLetraCalculado);  
+				colorLetraOpe = convertidorColoresHex(estiloOperacion.colorLetraCalculado);			
+			}			 
+		}  
+
+		//Variable para guardar el nombre de la clase
+		string nombreClase=clase.nombre;
+		if(asociacionNM!=""){
+			nombreClase=asociacionNM;
+		}
+
+		WriteLine("<html>");
+		WriteLine("<head>");
+		WriteLine("<title>"+nombreClase+"Listado</title>");
+		WriteLine("</head>");
+	    WriteLine("<body>");
+	    WriteLine("<div style='border:1px solid black; margin:20px'>");
+		WriteLine("<button style='color:"+colorFondo+"; font-family:"+tipoLetra+";'><a href=Home.html>Home</a></button>");
+		WriteLine("<h2>Listado " + nombreClase + "</h2>");
+		WriteLine("<p style='background-color: "+colorFondo+"; color:"+colorLetra+"; font-weight:bold; font-family:"+tipoLetra+"; text-align:"+alineacion+"'> Listado "+nombreClase+"</p>");
+		WriteLine("<form name='"+nombreClase+"' style='background-color:"+colorFondo+"; color:"+colorLetra+";font-family:"+tipoLetra+";text-align:"+alineacion+";'>");
+		WriteLine("<table>");
+			
+	   //Para que haga 4 lineas
+	   for(int i=0; i<4;i++){			
+			if(i==3){			 //Si es la ultima linea	
+				//PUNTOS SUSPENSIVOS
+				WriteLine("<tr><td>... </td><td></td></tr>");
+				WriteLine("<tr><td>" + nombreClase + " N:" + " </td><td>");
+			}else{
+				WriteLine("<tr><td>"+ nombreClase+" "+(i+1)+": </td><td>");
+			}						
+			WriteLine("<button style='color:" + colorLetraOpe + ";font-family:" + 
+				tipoLetraOpe + "'> <a href=" + nombreClase + "Home.html>Consultar</a> </button>");
+			WriteLine("<button style='color:" + colorLetraOpe + ";font-family:" + 
+				tipoLetraOpe + "'> <a href=" + nombreClase + "Home.html>Modificar</a> </button>");
+			WriteLine("<button style='color:" + colorLetraOpe + ";font-family:" + 
+				tipoLetraOpe + "'> <a href=" + nombreClase + "Home.html>Eliminar</a> </button>");
+
+			//Si no es de asociacion
+			if(asociacionNM==""){
+				//AÑADIR UN BOTON POR CADA OPERACION QUE TENGA ESA CLASE
+				foreach(Operacion operacion in clase.Operacion){
+					WriteLine("<button style='color:" + colorLetraOpe + ";font-family:" + tipoLetraOpe + "'> <a href=" +
+						clase.nombre + "Home.html>"+operacion.nombre+"</a> </button>");
+				}
+
+				//Añadir tambien las operaciones de la clase padre si tiene
+				if(superclase && clase.superClase.Operacion.Count!=0)			
+					foreach(Operacion operacion in clase.superClase.Operacion){
+						WriteLine("<button style='color:" + colorLetraOpe + ";font-family:" + tipoLetraOpe + "'> <a href=" +
+							clase.nombre + "Home.html>"+operacion.nombre+"</a> </button>");
+					}
+			}
+
+			WriteLine(" </td>");
+			WriteLine(" </tr>");			
+	   }
+
+       WriteLine("</table>");   
+	   WriteLine("<button style='color:"+colorFondo+"; font-family:"+tipoLetra+";'><a href="+
+			nombreClase+"Home.html>Volver</a></button>");
+	   WriteLine("</form>");
+	   WriteLine("</div>");
+	   WriteLine("</body>");
+	   WriteLine("</html>");
+
+		
+	}
+
+
+#>
+
+<#+
+   //METODO PARA PONER EL COLOR QUE HAN ELEGIDO LOS USUARIOS (CLASE ENRIQUECIDA)
+	  private string convertidorColoresHex(string color){
+	 
+			switch (color){
+            case "amarillo":
+                return "#FFFF00";
+
+            case "verde":
+                return "#008000";
+
+            case "rojo":
+                return "#FF0000";
+
+            case "azul":
+                return "#3399FF";
+
+            case "negro":
+			    return "#000000";
+
+            default:
+                return "#FFFFFF";
+            }
+	  } 
+#>
+
+<#+ 
+//METODO PARA GENERAR LA FUENTE QUE HA ELEGIDO EL USUARIO (CLASE ENRIQUECIDA)
+
+   private string convertidorTiposLetra(string tipoLetra){
+        switch (tipoLetra.ToLower())
+        {
+            case "arial":
+                return "Arial, sans-serif";
+            case "timesnewroman":
+                return "'Times New Roman', serif";
+            case "calibri":
+                return "Calibri, sans-serif";
+            default:
+                return "Arial, sans-serif";
+        }
+    }
+#>
+<#+
+// FUNCIÓN PARA GENERAR MENU
+private void GenerarMenu(List<String> listaClase)
+{
+    WriteLine("<html>");
+    WriteLine("<head>");
+    WriteLine("<title>Menú de la Aplicación</title>");
+    WriteLine("<style>");
+    WriteLine("body { background-color: #00aabb; font-family: 'Arial', sans-serif; margin: 0; }");
+    WriteLine("h1 { color: #333; text-align: center; padding: 20px; margin: 0; "+
+		"font-family: 'Times New Roman', serif; border-bottom: 2px solid #333; box-shadow: 0px 2px 5px #888; }");
+    WriteLine("ul { list-style-type: none; margin: 0; padding: 0; overflow: hidden; background-color: #333; }");
+    WriteLine("li { float: left; }");
+    WriteLine("li a { display: block; color: white; text-align: center; padding: 14px 16px; text-decoration: none; }");
+    WriteLine("li a:hover { background-color: #111; }");
+    WriteLine("</style>");
+    WriteLine("</head>");
+    WriteLine("<body>");
+    WriteLine("<h1>Menú de la Aplicación</h1>");
+    WriteLine("<ul>");
+    foreach (String clase in listaClase){
+        WriteLine($"<li><a href='{clase}Home.html'>{clase}</a></li>");
+    }
+    WriteLine("</ul>");
+    WriteLine("</body>");
+    WriteLine("</html>");
+}
+#>
+<#+
+//METODO PARA GENERAR JAVA DE CADA CLASE  (\t para tabular)
+	private void generarJava(Clase clase, bool subclase, bool superclase, bool abstracta){
+
+		//Pondremos que hace extend o abstract dependiendo de si es herencia y si es subclase o superclase
+		if((!subclase && !superclase) || (subclase && !abstracta)){	//Si no tiene herencia o si es clase padre no abstracta
+			WriteLine("public class " + clase.nombre + "{");
+		}else if(abstracta){	//Si es SuperClase y abstracta
+			WriteLine("public abstract class " + clase.nombre + "{");
+		}else if(superclase){		//Si es Subclase
+			WriteLine("public class " + clase.nombre + " extends "+clase.superClase.nombre+"{");				
+		} 
+
+		//ATRIBUTO CLAVE
+		if(clase.AtributoIdentificador!=null){
+			AtributoIdentificador atributoIdentificador = clase.AtributoIdentificador;
+			WriteLine("\t"+atributoIdentificador.modAcceso+" "+atributoIdentificador.tipoDato.ToString()+" "+
+				atributoIdentificador.nombre+";");	//Si hacemos enum del modo de acceso hay que modificar atributo.modAcceso			
+		}
+
+		//ATRIBUTO CLAVE DE CLASE PADRE
+		if(superclase && clase.superClase.AtributoIdentificador!=null){ 
+					AtributoIdentificador atributoIdentificadorPadre = clase.superClase.AtributoIdentificador;
+					WriteLine("\t"+atributoIdentificadorPadre.modAcceso+" "+atributoIdentificadorPadre.tipoDato.ToString()+" "+
+						atributoIdentificadorPadre.nombre+";");
+		}
+
+
+		//ATRIBUTOS DE CLASE PADRE
+		if(superclase && clase.superClase.Atributo.Count!=0){ 
+			foreach(Atributo atributo in clase.superClase.Atributo){
+				WriteLine("\t"+atributo.modAcceso+" "+atributo.tipoDato.ToString()+" "+atributo.nombre+";");
+			}			
+		}
+		//ATRIBUTOS
+		if(clase.Atributo.Count!=0)			
+			foreach(Atributo atributo in clase.Atributo){
+				WriteLine("\t"+atributo.modAcceso+" "+atributo.tipoDato.ToString()+" "+atributo.nombre+";");	//Si hacemos enum del modo de acceso hay que modificar atributo.modAcceso
+			}
+
+
+		//CONSTRUCTOR
+		WriteLine("\tpublic "+ clase.nombre + "(){");
+		WriteLine("\t}");	
+		
+		//GET Y SET ATRIBUTO CLAVE
+		if(clase.AtributoIdentificador!=null){
+			AtributoIdentificador atributoIdentificador = clase.AtributoIdentificador;
+			//GET
+				WriteLine("\tpublic " + atributoIdentificador.tipoDato.ToString() + " get" + atributoIdentificador.nombre + "(){");
+				WriteLine("\t\treturn this."+atributoIdentificador.nombre);	
+				WriteLine("\t}");	
+
+				//SET
+				WriteLine("\tpublic void set"+ atributoIdentificador.nombre + "("+ atributoIdentificador.tipoDato.ToString() + " " + atributoIdentificador.nombre + "){");	
+				WriteLine("\t\tthis." + atributoIdentificador.nombre + " = " + atributoIdentificador.nombre);	
+				WriteLine("\t}");	
+		}
+
+		//GET Y SET ATRIBUTO CLAVE DE CLASE PADRE
+		if(superclase && clase.superClase.AtributoIdentificador!=null){ 
+			AtributoIdentificador atributoIdentificadorPadre = clase.superClase.AtributoIdentificador;
+			//GET
+				WriteLine("\tpublic " + atributoIdentificadorPadre.tipoDato.ToString() + " get" + atributoIdentificadorPadre.nombre + "(){");
+				WriteLine("\t\treturn this."+atributoIdentificadorPadre.nombre);	
+				WriteLine("\t}");	
+
+				//SET
+				WriteLine("\tpublic void set"+ atributoIdentificadorPadre.nombre + "("+ atributoIdentificadorPadre.tipoDato.ToString() + " " + atributoIdentificadorPadre.nombre + "){");	
+				WriteLine("\t\tthis." + atributoIdentificadorPadre.nombre + " = " + atributoIdentificadorPadre.nombre);	
+				WriteLine("\t}");	
+		}
+
+		//GETTERS Y SETTERS
+		if(clase.Atributo.Count!=0)			
+			foreach(Atributo atributo in clase.Atributo){
+				//GET
+				WriteLine("\tpublic " + atributo.tipoDato.ToString() + " get" + atributo.nombre + "(){");
+				WriteLine("\t\treturn this."+atributo.nombre);	
+				WriteLine("\t}");	
+
+				//SET
+				WriteLine("\tpublic void set"+ atributo.nombre + "("+ atributo.tipoDato.ToString() + " " + atributo.nombre + "){");	
+				WriteLine("\t\tthis." + atributo.nombre + " = " + atributo.nombre);	
+				WriteLine("\t}");	 
+			}
+		
+		//GETTERS Y SETTERS ATRIBUTOS DE CLASE PADRE
+		if(superclase && clase.superClase.Atributo.Count!=0){ 
+			foreach(Atributo atributo in clase.superClase.Atributo){
+				//GET
+				WriteLine("\tpublic " + atributo.tipoDato.ToString() + " get" + atributo.nombre + "(){");
+				WriteLine("\t\treturn this."+atributo.nombre);	
+				WriteLine("\t}");	
+
+				//SET
+				WriteLine("\tpublic void set"+ atributo.nombre + "("+ atributo.tipoDato.ToString() + " " + atributo.nombre + "){");	
+				WriteLine("\t\tthis." + atributo.nombre + " = " + atributo.nombre);	
+				WriteLine("\t}");	  
+			}			
+		}
+
+
+		//OPERACIONES
+		if(clase.Operacion.Count!=0)
+			foreach(Operacion operacion in clase.Operacion){ //Recorremos las operaciones de la clase
+				//Recuperar parametro de salida y de entrada
+				string parametroEntrada = "";
+				string parametroSalida = "";
+				if(operacion.Parametro.Count!=0){ //Si hay algun parametro
+					foreach(Parametro parametro in operacion.Parametro){ //Recorremos los parametros de la operacion
+						string auxParametro = parametro.tipoParametro.ToString();
+						if(auxParametro.Equals("Entrada")){	//Si es parametro de ENTRADA
+							//Si el parametro no es el primero, le ponemos una , al principio
+							if(parametroEntrada!="")
+								parametroEntrada +=", ";
+							parametroEntrada += parametro.tipoDato.ToString() + " " + parametro.nombre;
+						}else if(auxParametro.Equals("Salida")) //Si es parametro de SALIDA
+							parametroSalida = parametro.tipoDato.ToString();
+						else{		//Si el parametro es de ENTRADA-SALIDA
+							//Si el parametro no es el primero, le ponemos una , al principio
+							if(parametroEntrada!="")
+								parametroEntrada +=", ";
+							parametroEntrada += parametro.tipoDato.ToString() + " " + parametro.nombre;
+							parametroSalida = parametro.tipoDato.ToString();
+						}
+					}
+				}
+
+				//Si no hay parametro de salida, se pone como void
+				if(parametroSalida=="")
+					parametroSalida="void";
+
+				WriteLine("\t"+operacion.modAcceso + " " + parametroSalida + " " + operacion.nombre + " (" + parametroEntrada + ")"); //Insertar parametros 
+				WriteLine("\t\t//To Do"); 
+				WriteLine("\t}"); 
+			}
+
+		//OPERACIONES DE CLASE PADRE
+		if(superclase && clase.superClase.Operacion.Count!=0)
+			foreach(Operacion operacion in clase.superClase.Operacion){ //Recorremos las operaciones de la clase
+				//Recuperar parametro de salida y de entrada
+				string parametroEntrada = "";
+				string parametroSalida = "";
+				if(operacion.Parametro.Count!=0){ //Si hay algun parametro
+					foreach(Parametro parametro in operacion.Parametro){ //Recorremos los parametros de la operacion
+						string auxParametro = parametro.tipoParametro.ToString();
+						if(auxParametro.Equals("Entrada")){	//Si es parametro de ENTRADA
+							//Si el parametro no es el primero, le ponemos una , al principio
+							if(parametroEntrada!="")
+								parametroEntrada +=", ";
+							parametroEntrada += parametro.tipoDato.ToString() + " " + parametro.nombre;
+						}else if(auxParametro.Equals("Salida")) //Si es parametro de SALIDA
+							parametroSalida = parametro.tipoDato.ToString();
+						else{		//Si el parametro es de ENTRADA-SALIDA
+							//Si el parametro no es el primero, le ponemos una , al principio
+							if(parametroEntrada!="")
+								parametroEntrada +=", ";
+							parametroEntrada += parametro.tipoDato.ToString() + " " + parametro.nombre;
+							parametroSalida = parametro.tipoDato.ToString();
+						}
+					}
+				}
+
+				//Si no hay parametro de salida, se pone como void
+				if(parametroSalida=="")
+					parametroSalida="void";
+
+				WriteLine("\t"+operacion.modAcceso + " " + parametroSalida + " " + operacion.nombre + " (" + parametroEntrada + ")"); //Insertar parametros 
+				WriteLine("\t\t//To Do"); 
+				WriteLine("\t}"); 
+			}
+
+		WriteLine("}"); //Cierre de la clase
+	}
+#>
